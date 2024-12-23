@@ -1,0 +1,62 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependency directories
+node_modules/
+bower_components/
+package-lock.json
+# Environment variables
+.env
+
+# Build output
+dist/
+build/
+frontend/build/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.swp
+*.swo
+*.bak
+
+# Editor-specific files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Testing files
+coverage/
+.nyc_output/
+jest/
+
+# Miscellaneous
+*.lock
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# MongoDB
+data/
+*.local
+
+# React
+fe/.env.local
+fe/.env.development.local
+fe/.env.test.local
+fe/.env.production.local
+
+# Debugging
+debug/
+
+# Temporary files
+tmp/
+temp/
