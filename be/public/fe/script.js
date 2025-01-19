@@ -1,7 +1,7 @@
-const BASE_URL = "http://localhost:5000/public/";
+const BASE_URL = window.location.origin;
 
 // Fetch video data from the API
-fetch('http://localhost:5000/api/videos/')
+fetch(`${BASE_URL}/api/videos/`)
   .then((response) => response.json())
   .then((data) => {
     const videoList = document.getElementById('video-list');
@@ -20,7 +20,7 @@ fetch('http://localhost:5000/api/videos/')
             .map(
               (url) =>
                 `<a href="video.html?url=${encodeURIComponent(
-                  BASE_URL + url
+                  BASE_URL+'/public/' + url
                 )}" target="_blank">${url.match(/\/(\d+p)\//)[1]}</a>`
             )
             .join('')}

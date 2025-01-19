@@ -26,13 +26,13 @@
     <br><br>
     <!-- <h1>Video Player</h1>
     <video id="video" class="video-js vjs-default-skin" controls width="640" height="360" data-setup="{}">
-        <source src="http://localhost:5000/public/uploads/videos/67801b1dfde2ed9777a54432=671334c7-1e4d-4d0c-8a46-1f0b996a14d3/720p/dolby-conductor-(www.demolandia.net).m3u8" type="application/x-mpegURL">
-        <source src="http://localhost:5000/public//uploads/videos/678031af7c41030a9eb3fea2=f6e68f85-184c-4bfd-bfe0-c00813877490/1080p/28-Years-Later_TLR-1_1920x696_AVC_420_8bit_DTS-HD_MA_AC3_51-thedigitaltheater.m3u8" type="application/x-mpegURL">
+        <source src="${BASE_URL}/public/uploads/videos/67801b1dfde2ed9777a54432=671334c7-1e4d-4d0c-8a46-1f0b996a14d3/720p/dolby-conductor-(www.demolandia.net).m3u8" type="application/x-mpegURL">
+        <source src="${BASE_URL}/public//uploads/videos/678031af7c41030a9eb3fea2=f6e68f85-184c-4bfd-bfe0-c00813877490/1080p/28-Years-Later_TLR-1_1920x696_AVC_420_8bit_DTS-HD_MA_AC3_51-thedigitaltheater.m3u8" type="application/x-mpegURL">
         
     </video> -->
 
     <script>
-        
+        const BASE_URL = window.location.origin;
         document.getElementById("uploadBtn").addEventListener('click',initUpload);
         
         function printFile(){
@@ -51,7 +51,7 @@
                 "description":description
             }
             try {
-                const response = await fetch("http://localhost:5000/api/videos", {
+                const response = await fetch(`${BASE_URL}/api/videos`, {
                 method: "POST",
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -91,7 +91,7 @@
                 formData.append('totalChunks',totalChunks);
                 formData.append('chunk',chunk);
               
-                const req = fetch('http://localhost:5000/api/videos/upload',{
+                const req = fetch(`${BASE_URL}/api/videos/upload`,{
                     method:'POST',
                     body:formData
                 }).then(response=>{
@@ -116,7 +116,7 @@
                 formData.append('totalChunks',totalChunks);
                 formData.append('chunk',chunk);
     
-                const req = fetch('http://localhost:5000/api/videos/upload',{
+                const req = fetch(`${BASE_URL}/api/videos/upload`,{
                     method:'POST',
                     body:formData
                 }).then(response=>{
@@ -139,7 +139,7 @@
                     console.log('Successfully uploaded chunks:', successfulResponses);
                     if(successfulResponses.length == totalChunks){
                         try {
-                        const response = await fetch("http://localhost:5000/api/videos/completeUpload", {
+                        const response = await fetch(`${BASE_URL}/api/videos/completeUpload`, {
                         method: "POST",
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({'uploadID':uploadKey,
