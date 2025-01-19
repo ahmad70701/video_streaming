@@ -60,4 +60,4 @@ debug/
 # Temporary files
 tmp/
 temp/
-be/public/
+be/public/uploads

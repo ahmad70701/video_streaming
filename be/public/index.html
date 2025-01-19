@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/video.js@7.10.2/dist/video-js.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/video.js@7.10.2/dist/video.min.js"></script>
+
+    <title>File Upload</title>
+    <style>
+        body{
+            background-color: grey;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <form id="uploadForm">
+        <input type="text" name="title", placeholder="Please specify the name", id="title"><br><br>
+        <input type="text" name="tags" id="tags" placeholder="Add video tags separated by a comma"><br><br>
+        <input type="text" name="description" id="description" placeholder="Add video description here"><br><br>
+        
+        <input type="file" name="video" id="video" placeholder="Please Select a file!" onchange="printFile()"><br><br>
+        <button id="uploadBtn">Submit</button>
+    </form>
+    <br><br>
+    <h1>Video Player</h1>
+    <video id="video" class="video-js vjs-default-skin" controls width="640" height="360" data-setup="{}">
+        <!-- <source src="http://localhost:5000/public/uploads/videos/67801b1dfde2ed9777a54432=671334c7-1e4d-4d0c-8a46-1f0b996a14d3/720p/dolby-conductor-(www.demolandia.net).m3u8" type="application/x-mpegURL"> -->
+        <source src="http://localhost:5000/public/uploads/videos/67802751999e272ed06d33b6=acb146fb-0c68-48fe-be53-4a73bdd9e649/480p/28-Years-Later_TLR-1_1920x696_AVC_420_8bit_DTS-HD_MA_AC3_51-thedigitaltheater.m3u8" type="application/x-mpegURL">
+        
+    </video>
+
+    <script>
+        
+        document.getElementById("uploadBtn").addEventListener('click',initUpload);
+        
+        function printFile(){
+            const file = document.getElementById('video').files[0];
+            console.log(file);
+            console.log(file.size);
+        }
+
+         async function initUpload(e){
+            e.preventDefault();
+            const title = document.getElementById("title").value;
+            const fileTags = document.getElementById("tags").value;
+            const description = document.getElementById("description").value;
+            const data = {"title":title,
+                "tags":fileTags,
+                "description":description
+            }
+            try {
+                const response = await fetch("http://localhost:5000/api/videos", {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const result = await response.json();
+                await uploadFileInChunks(result);
+            } catch (error) {
+                console.error('Error while sending data:', error);
+            }   
+        }
+        async function uploadFileInChunks(key){
+            const startTime = new Date();
+
+            const uploadKey = key.uploadKey
+            // console.log('Response from server:', uploadKey);
+            const file = document.getElementById('video').files[0];
+            const fileName = file.name;
+            const fileSize = file.size;
+            const chunkSize = 1024*1024 //50MB
+            const lastChunkSize = fileSize%chunkSize;
+            const totalChunks = Math.floor(fileSize/chunkSize)+(lastChunkSize>0?1:0);
+            console.log(`total chunks are: ${totalChunks} of file of size ${fileSize} in bytes`)
+            let uploadedChunks=0;
+            const fetchReqArray = [];
+            let progress = 0;
+            let start = 0 , end;
+            for(let chunkIndex=0;chunkIndex<totalChunks;chunkIndex++){
+                end = start+chunkSize;
+                const chunk = file.slice(start,end);
+                const formData = new FormData();
+                formData.append('uploadKey',uploadKey);
+                formData.append('fileName',fileName);
+                formData.append('chunkIndex',chunkIndex);
+                formData.append('totalChunks',totalChunks);
+                formData.append('chunk',chunk);
+              
+                const req = fetch('http://localhost:5000/api/videos/upload',{
+                    method:'POST',
+                    body:formData
+                }).then(response=>{
+                    if (!response.ok) {
+                    throw new Error(`Chunk ${chunkIndex} upload failed with status: ${response.status}`);
+                    }
+                    uploadedChunks++;
+                    progress = Math.floor(uploadedChunks/totalChunks*100);
+                    console.log(`uploaded chunk number ${chunkIndex} TOTALCHUNKS: ${totalChunks} UPLOADEDCHUNKS: ${uploadedChunks} PROGRESS: ${progress}`)
+                    return response.json();
+                });
+                fetchReqArray.push(req);
+                start = end;
+            }
+            if(lastChunkSize>0){
+                end = start+lastChunkSize
+                const chunk = file.slice(start,end);
+                const formData = new FormData();
+                formData.append('uploadKey',uploadKey);
+                formData.append('fileName',fileName);
+                formData.append('chunkIndex',totalChunks-1);
+                formData.append('totalChunks',totalChunks);
+                formData.append('chunk',chunk);
+    
+                const req = fetch('http://localhost:5000/api/videos/upload',{
+                    method:'POST',
+                    body:formData
+                }).then(response=>{
+                    if (!response.ok) {
+                    throw new Error(`Chunk ${chunkIndex} upload failed with status: ${response.status}`);
+                    }
+                    uploadedChunks++;
+                    progress = Math.floor(uploadedChunks/totalChunks*100);
+                    console.log(`uploaded chunk number ${chunkIndex} TOTALCHUNKS: ${totalChunks} UPLOADEDCHUNKS: ${uploadedChunks} PROGRESS: ${progress}`)
+                    return response.json();
+                });
+                fetchReqArray.push(req);
+            }
+            try {
+                const results = await Promise.allSettled(fetchReqArray);
+                const successfulResponses = results
+                    .filter(result => result.status === 'fulfilled' && result.value !== null)
+                    .map(result => result.value);
+
+                    console.log('Successfully uploaded chunks:', successfulResponses);
+                    if(successfulResponses.length == totalChunks){
+                        try {
+                        const response = await fetch("http://localhost:5000/api/videos/completeUpload", {
+                        method: "POST",
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({'uploadID':uploadKey,
+                            'fileName':fileName
+                        })
+                        });
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        const result = await response.json();
+                        
+                        } catch (error) {
+                            console.error('Error while sending data:', error);
+                        } 
+                    }
+                const endTime = new Date();
+                const elapsedTime = (endTime-startTime)/1000
+                
+                console.log(`Upload process completed in ${elapsedTime} seconds`);
+            } catch (error) {
+                console.error('Error during chunk uploads:', error);
+            }
+        }
+
+    </script>
+
+    
+</body>
+</html>
