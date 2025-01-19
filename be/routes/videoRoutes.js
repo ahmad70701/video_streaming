@@ -1,6 +1,6 @@
 import express,{ Router } from 'express';
 import { getVideos, getVideo, addVideo, uploadVideo, completeUpload } from '../controllers/videosController.js';
-import { isAuthenticated } from '../l/authMiddleware.js';
+import { isAuthenticated } from '../middlewares/authMiddleware.js';
 const videoRouter = Router();
 
 videoRouter.get('/', getVideos);
