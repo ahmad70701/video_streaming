@@ -1,7 +1,12 @@
 import { Router } from 'express';
-import { getUsers } from '../controllers/userController.js';
-const router = Router();
+import { getUsers, getUser, addUser, deleteUser, updateUser } from '../controllers/userController.js';
+import { validateUserRegistration } from '../middleWares/userValidatorMiddleware.js';
 
-router.get('/', getUsers);
+const userRouter = Router();
+userRouter.get('/', getUsers);
+userRouter.get('/:id', getUser);
+userRouter.post('/',validateUserRegistration,addUser);
+userRouter.delete('/:id', deleteUser);
+userRouter.put('/:id', validateUserRegistration, updateUser);
 
-export default router;
+export default userRouter;

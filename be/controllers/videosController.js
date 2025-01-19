@@ -3,24 +3,27 @@ import { randomUUID } from "crypto";
 import fs from 'fs';
 import { Buffer } from 'node:buffer';
 import path from 'path';
+import ffmpeg from 'fluent-ffmpeg';
+import { ExpressValidator } from "express-validator";
 
 const __dirname = path.resolve();
+
 export async function getVideos(req, res) {
     try {
         const videos = await Video.find();
         res.status(200).json(videos);
-      } catch (error) {
+    } catch (error) {
+        console.error(error);
         res.status(500).json({ error: error.message });
       }
 }
 
 export async function getVideo(req,res) {
-    console.log(req.params.id);
     try {
         const video = await Video.findById(req.params.id);
         res.status(200).json(video);
-
     } catch (error) {
+        console.error(error);
         res.status(500).json({error: error.message})
     }
 }
@@ -37,7 +40,7 @@ export async function addVideo(req, res) {
             title: title,
             tags: tags,
             description: description,
-            fileUrl: '',
+            fileUrl: [],
         });
         const savedVideo = await video.save();
         const id = savedVideo._id.toString(); 
@@ -78,14 +81,14 @@ export async function uploadVideo(req, res) {
             writeStream.write(chunk[0]);
             writeStream.end();
             writeStream.on('finish', () => {
-                // console.log('File written successfully!');
+                console.log('File written successfully!');
             });
             writeStream.on('error', (err) => {
                 console.error('Error writing file:', err);
             });
         });
     try {
-        res.status(202).json({'chunk':formData['chunkIndex']});
+        res.status(202).json({'chunk index saved':formData['chunkIndex']});
     } catch (error) {
         res.status(500).json({error: error.message})
     }
@@ -96,16 +99,18 @@ export async function completeUpload(req, res) {
         const {uploadID, fileName} = req.body;
         const chunksFolderPath = path.join(__dirname, `/tmp/${uploadID}/chunks`);
         const outputFileName = path.join(__dirname, `/tmp/${uploadID}/${fileName}`);
-        await processFiles(chunksFolderPath, outputFileName);
+        const streamURLS = await processFiles(chunksFolderPath, outputFileName,fileName,uploadID);
         console.log('Upload Completed!')
+        console.log(streamURLS)
         res.status(200).json('Upload Completed');
-
+        // const filePath = path.join(__dirname,`/tmp/${uploadID}`)
+        // transcodeVideo(filePath, fileName);
     } catch (error) {
         res.status(500).json({error: error.message})
     }
 }
 
-async function processFiles(folderPath, outputFileName) {
+async function processFiles(folderPath, outputFileName,fileName,uploadID) {
     try {
         // Read all file names in the folder
         let files = await fs.promises.readdir(folderPath);
@@ -132,9 +137,135 @@ async function processFiles(folderPath, outputFileName) {
 
         // Delete the original files
         await fs.promises.rm(folderPath, { recursive: true, force: true });
-        
+
+        const filePath = path.join(__dirname, `/tmp/${uploadID}/${fileName}`)
+        return transcodeVideo(filePath, fileName,uploadID);
+
     } catch (error) {
         console.error('Error processing files:', error);
     }
 }
 
+// function transcodeVideo(inputPath, fileName,uploadID) {
+//     const resolutions = [
+//       { width: 1920, height: 1080, folder: '1080p' },
+//       { width: 1280, height: 720, folder: '720p' },
+//       { width: 854, height: 480, folder: '480p' },
+//     ];
+//     const publicDir = path.join(__dirname, `/public/uploads/videos/${uploadID}`);
+//     const streamURLS = {}
+//     resolutions.forEach(({ width, height, folder }) => {
+//         const outputDir = path.join(publicDir, folder);
+//         console.log(outputDir);
+//     //   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
+//       fs.promises.mkdir(outputDir, { recursive: true })
+  
+//       const outputFileName = path.basename(fileName, path.extname(fileName)) + '.m3u8';
+//       const outputPath = path.join(outputDir, outputFileName);
+  
+//       ffmpeg(inputPath)
+//         .outputOptions([
+//           '-codec:v libx264',
+//           '-preset veryfast',
+//           '-codec:a aac',
+//           '-ac 2',
+//           '-strict -2',
+//           '-f hls',
+//           '-hls_time 4',
+//           '-hls_playlist_type vod',
+//         ])
+//         .size(`${width}x${height}`)
+//         .output(outputPath)
+//         .on('start', () => {
+//           console.log(`Transcoding started for resolution ${width}x${height}`);
+//         })
+//         .on('error', (err) => {
+//           console.error(`Error while transcoding: ${err.message}`);
+//         })
+//         .on('end', async () => {
+//             console.log(`Transcoding completed for resolution ${width}x${height}`);
+//             const streamUrl = `/uploads/videos/${uploadID}/${folder}/${outputFileName}`;
+//             console.log(uploadID.split('=')[0])
+//             await Video.findByIdAndUpdate(
+//                 uploadID.split('=')[0],
+//                 {folder:streamUrl} ,
+//               );
+//             streamURLS[folder] = streamUrl;
+//             // console.log('Stream URL:', streamUrl);
+//             console.log(streamURLS)
+//         })
+//         .run();
+//     });
+//     return streamURLS;
+  
+//     // fs.unlink(inputPath, (err) => {
+//     //   if (err) console.error(`Failed to delete temp file: ${err.message}`);
+//     // });
+// }
+
+async function transcodeVideo(inputPath, fileName, uploadID) {
+    const resolutions = [
+      { width: 1920, height: 1080, folder: '1080p' },
+      { width: 1280, height: 720, folder: '720p' },
+      { width: 854, height: 480, folder: '480p' },
+    ];
+  
+    const publicDir = path.join(__dirname, `/public/uploads/videos/${uploadID}`);
+    const streamURLS = [];
+  
+    try {
+      // Create directories and process resolutions sequentially
+      for (const { width, height, folder } of resolutions) {
+        const outputDir = path.join(publicDir, folder);
+        await fs.promises.mkdir(outputDir, { recursive: true });
+  
+        const outputFileName = path.basename(fileName, path.extname(fileName)) + '.m3u8';
+        const outputPath = path.join(outputDir, outputFileName);
+  
+        // Wrap transcoding in a Promise to handle asynchronous behavior
+        await new Promise((resolve, reject) => {
+          ffmpeg(inputPath)
+            .outputOptions([
+              '-codec:v libx264',
+              '-preset veryfast',
+              '-codec:a aac',
+              '-ac 2',
+              '-strict -2',
+              '-f hls',
+              '-hls_time 4',
+              '-hls_playlist_type vod',
+            ])
+            .size(`${width}x${height}`)
+            .output(outputPath)
+            .on('start', () => {
+              console.log(`Transcoding started for resolution ${width}x${height}`);
+            })
+            .on('error', (err) => {
+              console.error(`Error while transcoding: ${err.message}`);
+              reject(err);
+            })
+            .on('end', async () => {
+              console.log(`Transcoding completed for resolution ${width}x${height}`);
+              const streamUrl = `/uploads/videos/${uploadID}/${folder}/${outputFileName}`;
+  
+              // Push URL to the array and update the database
+              streamURLS.push(streamUrl);
+              await Video.findByIdAndUpdate(uploadID.split('=')[0], {
+                $push: { fileUrl: streamUrl },
+              });
+  
+              resolve();
+            })
+            .run();
+        });
+      }
+  
+      console.log('All resolutions processed:', streamURLS);
+      return streamURLS;
+    } catch (err) {
+        
+      console.error('Error during transcoding:', err.message);
+      throw err;
+    }
+  }
+  

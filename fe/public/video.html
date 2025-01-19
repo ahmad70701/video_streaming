@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Playback</title>
+  <link href="https://cdn.jsdelivr.net/npm/video.js@7.10.2/dist/video-js.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/video.js@7.10.2/dist/video.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+  <header>
+    <h1>Video Playback</h1>
+  </header>
+  <main class="video-player">
+    <!-- <video
+      id="video-player"
+      class="video-js vjs-default-skin"
+      controls
+      width="960"
+      height="540"
+      data-setup="{}"
+    >
+      <source id="video-source" src="" type="application/x-mpegURL">
+      Your browser does not support HLS streaming.
+    </video> -->
+
+    <video 
+    id="video-player" 
+    class="video-js vjs-default-skin" 
+    controls 
+    width="960" 
+    height="540" 
+    data-setup="{}">
+        <!-- <source src="http://localhost:5000/public/uploads/videos/67801b1dfde2ed9777a54432=671334c7-1e4d-4d0c-8a46-1f0b996a14d3/720p/dolby-conductor-(www.demolandia.net).m3u8" type="application/x-mpegURL"> -->
+        <source src="http://localhost:5000/public//uploads/videos/678031af7c41030a9eb3fea2=f6e68f85-184c-4bfd-bfe0-c00813877490/1080p/28-Years-Later_TLR-1_1920x696_AVC_420_8bit_DTS-HD_MA_AC3_51-thedigitaltheater.m3u8" type="application/x-mpegURL">
+        
+    </video>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const videoUrl = params.get('url');
+
+    const player = videojs('video-player');
+    player.src({ src: videoUrl, type: 'application/x-mpegURL' });
+
+    // player.on('play', () => {
+    //   console.log('Playback started');
+    // });
+  </script>
+</body>
+</html>
