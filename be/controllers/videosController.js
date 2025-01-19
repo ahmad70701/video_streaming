@@ -4,7 +4,6 @@ import fs from 'fs';
 import { Buffer } from 'node:buffer';
 import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
-import { ExpressValidator } from "express-validator";
 
 const __dirname = path.resolve();
 
@@ -33,9 +32,7 @@ export async function addVideo(req, res) {
         const uniqueID = randomUUID(); 
         const { title, tags, description } = req.body;
         const existingVideo = await Video.findOne({ title: title });
-        if (existingVideo) {
-            return res.status(409).json({ error: 'A video with this title already exists.' });
-        }
+        if (existingVideo) return res.status(409).json({ error: 'A video with this title already exists.' });
         const video = new Video({
             title: title,
             tags: tags,

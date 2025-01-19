@@ -35,7 +35,7 @@ export async function addUser(req, res) {
     userStatus:userStatus
   });
   try {
-    const savedUser = await user.save()
+    const savedUser = await user.save();
     const userId = savedUser._id.toString();
     res.status(200).json(userId);
   } catch (error) {
@@ -47,11 +47,8 @@ export async function addUser(req, res) {
 export async function deleteUser(req, res) {
   try {
       const deletedUser = await User.findByIdAndDelete(req.params.id);
-      if (!deletedUser) {
-          res.status(409).json("No User with this ID");
-      } else {
-        res.status(200).json(`User deleted!`);
-      }
+      if (!deletedUser) return res.status(409).json("No User with this ID");
+      res.status(200).json(`User deleted!`);
   } catch (error) {
     console.error(error);
     res.status(500).json({error: error.message})

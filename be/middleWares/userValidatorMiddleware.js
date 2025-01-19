@@ -1,4 +1,4 @@
-import { validationResult , body} from 'express-validator';
+import { validationResult } from 'express-validator';
 import { isStrongPassword, emailValidator, sanitizeInput, isOptional } from '../utils/validators.js';
 
 export const validateUserRegistration = [
