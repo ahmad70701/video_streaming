@@ -16,9 +16,9 @@ body {
     display: flex;
     justify-content: space-between;
     flex-wrap: wrap;
-    align-items: center;
     flex-direction: column;
-    gap: 20px;
+    align-items: center;
+    gap: 10px;
     margin-top: 20vh;
   }
   form input{
@@ -42,6 +42,17 @@ body {
   form button:hover{
     color: rgb(255, 255, 255);
     background: #2e7d32;
+  }
+  form progress{
+    width: 300px;
+    height: 50px;
+  }
+
+
+  #progressText {
+    font-size: 14px;
+    font-weight: bold;
+    color: #000;
   }
   h1 {
     margin: 0;
