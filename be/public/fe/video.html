@@ -7,24 +7,20 @@
   <link href="https://cdn.jsdelivr.net/npm/video.js@7.10.2/dist/video-js.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/video.js@7.10.2/dist/video.min.js"></script>
   <link rel="stylesheet" href="styles.css">
-
+<style>
+  
+</style>
 </head>
 <body>
   <header>
     <h1>Video Playback</h1>
+    <nav class="hidden" id="nav">
+      <a href="index.html" class="link" id="home">Home</a>
+      <a href="" class="link" id="upload">Upload New Video</a>
+      <a href="login.html" class="link" id="login">SignUp/Login</a>
+    </nav>
   </header>
   <main class="video-player">
-    <!-- <video
-      id="video-player"
-      class="video-js vjs-default-skin"
-      controls
-      width="960"
-      height="540"
-      data-setup="{}"
-    >
-      <source id="video-source" src="" type="application/x-mpegURL">
-      Your browser does not support HLS streaming.
-    </video> -->
 
     <video 
     id="video-player" 
@@ -38,17 +34,6 @@
         
     </video>
   </main>
-
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const videoUrl = params.get('url');
-
-    const player = videojs('video-player');
-    player.src({ src: videoUrl, type: 'application/x-mpegURL' });
-
-    // player.on('play', () => {
-    //   console.log('Playback started');
-    // });
-  </script>
+  <script src="video.js"></script>
 </body>
 </html>

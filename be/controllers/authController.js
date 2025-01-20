@@ -30,3 +30,12 @@ export async function logout(req, res) {
         res.status(500).json({ error: error.message });
     }
 }
+
+export async function authenticate(req, res) {
+    try {
+        res.status(200).json({ message: "Authenticated" });
+    } catch (error) {
+        console.log(error);
+        res.satatus(500).json({ errro: error.message });
+    }
+}
