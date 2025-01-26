@@ -1,5 +1,5 @@
 import { validationResult } from 'express-validator';
-import { isStrongPassword, emailValidator, sanitizeInput, isOptional } from '../utils/validators.js';
+import { isStrongPassword, emailValidator, sanitizeInput, isOptional } from '../services/validatorService.js';
 
 export const validateUserRegistration = [
   isOptional(['userStatus','userRole']),

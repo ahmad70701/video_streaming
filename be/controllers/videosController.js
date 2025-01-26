@@ -1,15 +1,17 @@
-import Video from "../models/videos.js";
+import {getOneVideo, getAllVideos, addVideoToDB, deleteVideoFromDB} from "../models/videos.js";
 import { randomUUID } from "crypto";
 import fs from 'fs';
 import { Buffer } from 'node:buffer';
 import path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
+import { uploadFile } from "../services/fileUploadService.js";
+import { stat } from "node:fs";
 
 const __dirname = path.resolve();
 
 export async function getVideos(req, res) {
     try {
-        const videos = await Video.find();
+        const videos = await getAllVideos();
         res.status(200).json(videos);
     } catch (error) {
         console.error(error);
@@ -19,7 +21,7 @@ export async function getVideos(req, res) {
 
 export async function getVideo(req,res) {
     try {
-        const video = await Video.findById(req.params.id);
+        const video = await getOneVideo(req.params.id);
         res.status(200).json(video);
     } catch (error) {
         console.error(error);
@@ -29,63 +31,33 @@ export async function getVideo(req,res) {
 
 export async function addVideo(req, res) {
     try {
-        const uniqueID = randomUUID(); 
         const { title, tags, description } = req.body;
-        const existingVideo = await Video.findOne({ title: title });
-        if (existingVideo) return res.status(409).json({ error: 'A video with this title already exists.' });
-        const video = new Video({
-            title: title,
-            tags: tags,
-            description: description,
-            fileUrl: [],
-        });
-        const savedVideo = await video.save();
-        const id = savedVideo._id.toString(); 
-        res.status(200).json({ uploadKey: `${id}=${uniqueID}` });
+        const uploadID = randomUUID(); 
+        const videoID = await addVideoToDB(title, tags, description);
+        if (!videoID) return res.status(409).json({ error: 'A video with this title already exists.' });
+        return res.status(200).json({ uploadKey: `${videoID}=${uploadID}` });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });
     }
 }
 
+export async function deleteVideo(req, res) {
+    try {
+        await deleteVideoFromDB(req.params.id);
+        return res.status(200).json({ message: `${req.params.id} has been removed!` });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+}
 
 export async function uploadVideo(req, res) {
-    const boundary = req.headers['content-type'].split('boundary=')[1];
-    const boundaryBuffer = Buffer.from('\r\n'+boundary + '--\r\n');
-
-    const parts = req.body.toString("utf8").split('--' + boundary);
-    let chunk = [];
-    const formData = {}
-    parts.forEach(part => {
-        //formdata
-        if (part.includes('Content-Disposition')&&!part.includes('filename')) {
-            let [key,value] = part.split('Content-Disposition: ')[1].split('form-data; name=')[1].split('\r\n\r\n');
-            formData[key.replace(/^"|"$/g, '')] = value.trim();
-        }
-        //fileData
-        else if(part.includes('Content-Disposition') && part.includes('filename')) {
-            let [key, value] = part.split('Content-Disposition: ')[1].split('form-data; name=')[1].split('\r\n\r\n');
-            let bufferToIndex = Buffer.from(key + '\r\n\r\n');
-            let index = req.body.indexOf(bufferToIndex)+ bufferToIndex.length
-            chunk.push(req.body.slice(index,(req.body.length - boundaryBuffer.length-2)))
-        }
-    });
-    const chunksFolderPath = path.join(__dirname, `/tmp/${formData['uploadKey']}/chunks`);
-    const chunkFilePath = path.join(chunksFolderPath, `${formData['chunkIndex']}`);
-    fs.promises.mkdir(chunksFolderPath, { recursive: true })
-        .then(() => {
-            const writeStream = fs.createWriteStream(chunkFilePath);
-            writeStream.write(chunk[0]);
-            writeStream.end();
-            writeStream.on('finish', () => {
-                console.log('File written successfully!');
-            });
-            writeStream.on('error', (err) => {
-                console.error('Error writing file:', err);
-            });
-        });
     try {
-        res.status(202).json({'chunk index saved':formData['chunkIndex']});
+        const status = await uploadFile(req.file, req.form);
+        console.log(status);
+        if (!status) return res.status(500).json({ 'messsage': 'error saving the file!' });    
+        return res.status(202).json({'chunk index saved':req.form['chunkIndex']});
     } catch (error) {
         res.status(500).json({error: error.message})
     }
@@ -96,7 +68,8 @@ export async function completeUpload(req, res) {
         const {uploadID, fileName} = req.body;
         const chunksFolderPath = path.join(__dirname, `/tmp/${uploadID}/chunks`);
         const outputFileName = path.join(__dirname, `/tmp/${uploadID}/${fileName}`);
-        const streamURLS = await processFiles(chunksFolderPath, outputFileName,fileName,uploadID,res);
+        res.status(200).json('All chunks uploaded, File will be processed');
+        const streamURLS = await processFiles(chunksFolderPath, outputFileName, fileName, uploadID, res);
         console.log('Upload Completed!')
         console.log(streamURLS)
         // const filePath = path.join(__dirname,`/tmp/${uploadID}`)
@@ -135,7 +108,6 @@ async function processFiles(folderPath, outputFileName,fileName,uploadID,res) {
         await fs.promises.rm(folderPath, { recursive: true, force: true });
 
         const filePath = path.join(__dirname, `/tmp/${uploadID}/${fileName}`)
-        res.status(200).json('Upload Completed');
         return transcodeVideo(filePath, fileName,uploadID);
 
     } catch (error) {
