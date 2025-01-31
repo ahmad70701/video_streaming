@@ -74,7 +74,7 @@ async function uploadFileInChunks(key){
   
     const fileName = file.name;
     const fileSize = file.size;
-    const chunkSize = 1024*1024 //50MB
+    const chunkSize = 1024 * 1024 * 5;
     const lastChunkSize = fileSize%chunkSize;
     const totalChunks = Math.floor(fileSize/chunkSize)+(lastChunkSize>0?1:0);
     console.log(`total chunks are: ${totalChunks} of file of size ${fileSize} in bytes`)

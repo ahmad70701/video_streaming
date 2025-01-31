@@ -4,6 +4,7 @@ const videoSchema = Schema({
     title: { type: String, required: true, unique: true },
     description:{type: String},
     tags: { type: [String] },
+    status : {type: String},
     fileUrl: { type: [ String ] },
 }, { timestamps: true });
 
@@ -16,6 +17,18 @@ export async function getOneVideo(_id) {
 export async function getAllVideos() {
     return await Video.find();
 }
+
+export async function changeVideoStatus(id,status) {
+    await Video.findByIdAndUpdate(id, {
+        status: status
+    });
+}
+
+export async function addVideoURLs(id,streamUrl) {
+    await Video.findByIdAndUpdate(id, {
+        $push: { fileUrl: streamUrl },
+      });
+} 
 
 export async function addVideoToDB(title,tags,description) {
     const existingVideo = await Video.findOne({ title: title });
