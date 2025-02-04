@@ -55,7 +55,7 @@ export async function deleteVideo(req, res) {
 
 export async function uploadVideo(req, res) {
     try {
-        const status = await uploadFile(req.file, req.form);
+        const status = await uploadFile(req.file[0].buffer, req.form);
         if (!status) return res.status(500).json({ 'messsage': 'error saving the file!' });    
         return res.status(202).json({'chunk index saved':req.form['chunkIndex']});
     } catch (error) {

@@ -135,3 +135,9 @@ body {
     background: #388e3c;
   }
   
+  .video-player{
+    display: flex;
+    align-items:center;
+    justify-content: space-around;
+    height: 80vh;
+  }

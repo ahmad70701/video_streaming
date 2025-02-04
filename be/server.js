@@ -7,9 +7,11 @@ import videoRouter from './routes/videoRoutes.js';
 import userRouter from './routes/userRoutes.js';
 import authRouter from './routes/authRoutes.js';
 import cookieParser from 'cookie-parser';
-
+import blockedAt from 'blocked-at';
 const __dirname = path.resolve();
-
+blockedAt((time, stack) => {
+  console.warn(`Event loop blocked for ${time}ms, operation started here:\n`, stack);
+});
 // init
 config();
 const app = express();

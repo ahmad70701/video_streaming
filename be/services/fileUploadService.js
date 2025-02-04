@@ -10,7 +10,7 @@ export async function uploadFile(chunk, formData) {
     try {
         await fs.promises.mkdir(chunksFolderPath, { recursive: true });
         const writeStream = fs.createWriteStream(chunkFilePath);
-        writeStream.write(chunk[0]);
+        writeStream.write(chunk);
         writeStream.end();
         const status = await new Promise((resolve, reject) => {
             writeStream.on('finish', () => {
